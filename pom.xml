@@ -8,4 +8,46 @@
   <artifactId>automatic_dependency_characterization</artifactId>
   <version>1.0-SNAPSHOT</version>
 
+  <dependencies>
+    <!-- https://mvnrepository.com/artifact/net.imagej/ij -->
+    <dependency>
+      <groupId>net.imagej</groupId>
+      <artifactId>ij</artifactId>
+      <version>1.51s</version>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-text -->
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-text</artifactId>
+      <version>1.2</version>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/org.biojava/biojava -->
+    <dependency>
+      <groupId>org.biojava</groupId>
+      <artifactId>biojava</artifactId>
+      <version>5.0.0-alpha14</version>
+      <type>pom</type>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/org.biojava/biojava-core -->
+    <dependency>
+      <groupId>org.biojava</groupId>
+      <artifactId>biojava-core</artifactId>
+      <version>5.0.0-alpha14</version>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/org.biojava/biojava-sequencing -->
+    <dependency>
+      <groupId>org.biojava</groupId>
+      <artifactId>biojava-sequencing</artifactId>
+      <version>5.0.0-alpha14</version>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/org.biojava/biojava-structure -->
+    <dependency>
+      <groupId>org.biojava</groupId>
+      <artifactId>biojava-structure</artifactId>
+      <version>5.0.0-alpha14</version>
+    </dependency>
+
+
+  </dependencies>
+
 </project>

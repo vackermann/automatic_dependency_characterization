@@ -55,7 +55,7 @@ public class InputParameter {
    */
   double getValueAt(int index, int totalSteps) {
     double stepSize = (upperBound - lowerBound) / totalSteps;
-    double result = stepSize * index;
+    double result = (stepSize * index) + lowerBound;
     if (onlyIntegerValues) {
       result = (int) Math.round(result);
     }

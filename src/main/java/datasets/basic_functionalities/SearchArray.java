@@ -5,33 +5,37 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
+import com.sun.tools.javac.util.ArrayUtils;
+
 import datasets.DatasetCreator;
 import datasets.InputParameter;
 import weka.core.Instance;
 
 /**
- * Created by Vanessa Ackermann on 22.01.18.
+ * Created by Vanessa Ackermann on 06.02.18.
  *
  * @author Vanessa Ackermann
  * @version 1.0
  */
-public class SortArray extends DatasetCreator {
+public class SearchArray extends DatasetCreator {
 
-  private static final String DATASETNAME = "SortArray";
-  private static final int NUMBEROFPARAMETERS = 1;
+  private static final String DATASETNAME = "SearchArray";
+  private static final int NUMBEROFPARAMETERS = 2;
 
-  public SortArray() {
+  public SearchArray() {
     super(DATASETNAME, NUMBEROFPARAMETERS);
     List<InputParameter> inputParameters = new LinkedList<InputParameter>();
-    inputParameters.add(new InputParameter("ArraySize", 1, 10000, true));
+    inputParameters.add(new InputParameter("ArraySize", 0, 100000, true));
+    inputParameters.add(new InputParameter("Key", 0, 100000, true));
     this.setInputParameters(inputParameters);
   }
 
   public double getRuntime(Instance instance) {
     int arraySize = (int) instance.value(0);
     int[] randomArray = randomIntArray(arraySize);
+    int key = (int) instance.value(1);
     long startTime = System.nanoTime();
-    Arrays.sort(randomArray);
+    boolean containsKey = Arrays.asList(randomArray).contains(key);
     long stopTime = System.nanoTime();
     return (stopTime - startTime);
   }
@@ -44,5 +48,4 @@ public class SortArray extends DatasetCreator {
     }
     return result;
   }
-
 }

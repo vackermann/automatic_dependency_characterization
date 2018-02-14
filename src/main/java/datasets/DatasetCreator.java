@@ -3,6 +3,9 @@ package datasets;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
+
+import org.boon.core.Sys;
 
 import weka.core.Attribute;
 import weka.core.DenseInstance;
@@ -148,6 +151,7 @@ public abstract class DatasetCreator {
    */
   private void createEquidistantInputInstances(Instances dataset, int size) {
     int totalSteps = (int) Math.round(Math.pow(size, 1.0 / (getNumberOfParameters())));
+    System.out.println("Total steps: " + totalSteps);
     for (int i = 0; i < size; i++) {
       Instance instance = new DenseInstance(getNumberOfParameters() + 1);
       instance.setDataset(dataset);
@@ -159,6 +163,7 @@ public abstract class DatasetCreator {
       }
       dataset.add(instance);
     }
+    System.out.println("All input instances created.");
   }
 
   /**
@@ -168,8 +173,27 @@ public abstract class DatasetCreator {
    *     set of instances with same attributes
    */
   private void fillDatasetWithClassValues(Instances dataset) {
+    //Shuffeln damit kein Bias gegen Ende hin kommt
+    dataset.randomize(new Random());
+
+    //THROW AWAY 1% OF VALUES (just in time compilation -> Java optimiert Schleife wenn er die ne Zeit lang gemacht hat)
+    int dummyCounter = (int) (dataset.size() * .01);
     for (Instance instance : dataset) {
       instance.setClassValue(getRuntime(instance));
+      dummyCounter--;
+      System.out.print("+");
+      if (dummyCounter == 0) {
+        System.out.println("\n Dummy meassurement finished. Will start real computation now.");
+        break;
+      }
+    }
+    int instanceCounter = 0;
+    for (Instance instance : dataset) {
+      instance.setClassValue(getRuntime(instance));
+      instanceCounter++;
+      if (instanceCounter % 10 == 0) {
+        System.out.println("Meassured instances: " + instanceCounter + "/" + dataset.size());
+      }
     }
   }
 

@@ -9,29 +9,33 @@ import datasets.DatasetCreator;
 import datasets.InputParameter;
 import weka.core.Instance;
 
+import static java.util.Arrays.stream;
+
 /**
- * Created by Vanessa Ackermann on 22.01.18.
+ * Created by Vanessa Ackermann on 06.02.18.
  *
  * @author Vanessa Ackermann
  * @version 1.0
  */
-public class SortArray extends DatasetCreator {
+public class FilterArray extends DatasetCreator {
 
-  private static final String DATASETNAME = "SortArray";
-  private static final int NUMBEROFPARAMETERS = 1;
+  private static final String DATASETNAME = "FilterArray";
+  private static final int NUMBEROFPARAMETERS = 2;
 
-  public SortArray() {
+  public FilterArray() {
     super(DATASETNAME, NUMBEROFPARAMETERS);
     List<InputParameter> inputParameters = new LinkedList<InputParameter>();
-    inputParameters.add(new InputParameter("ArraySize", 1, 10000, true));
+    inputParameters.add(new InputParameter("ArraySize", 0, 100000, true));
+    inputParameters.add(new InputParameter("FilterKey", 0, 100000, true));
     this.setInputParameters(inputParameters);
   }
 
   public double getRuntime(Instance instance) {
     int arraySize = (int) instance.value(0);
     int[] randomArray = randomIntArray(arraySize);
+    int filterKey = (int) instance.value(1);
     long startTime = System.nanoTime();
-    Arrays.sort(randomArray);
+    int[] result = Arrays.stream(randomArray).filter(i -> i <= filterKey).toArray();
     long stopTime = System.nanoTime();
     return (stopTime - startTime);
   }
