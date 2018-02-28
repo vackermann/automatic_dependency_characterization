@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.8" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -21,31 +21,32 @@
       <artifactId>commons-text</artifactId>
       <version>1.2</version>
     </dependency>
-    <!-- https://mvnrepository.com/artifact/org.biojava/biojava -->
+
+    <!-- https://mvnrepository.com/artifact/org.biojava/biojava
     <dependency>
       <groupId>org.biojava</groupId>
       <artifactId>biojava</artifactId>
       <version>5.0.0-alpha14</version>
       <type>pom</type>
     </dependency>
-    <!-- https://mvnrepository.com/artifact/org.biojava/biojava-core -->
+     https://mvnrepository.com/artifact/org.biojava/biojava-core
     <dependency>
       <groupId>org.biojava</groupId>
       <artifactId>biojava-core</artifactId>
       <version>5.0.0-alpha14</version>
     </dependency>
-    <!-- https://mvnrepository.com/artifact/org.biojava/biojava-sequencing -->
+     https://mvnrepository.com/artifact/org.biojava/biojava-sequencing
     <dependency>
       <groupId>org.biojava</groupId>
       <artifactId>biojava-sequencing</artifactId>
       <version>5.0.0-alpha14</version>
     </dependency>
-    <!-- https://mvnrepository.com/artifact/org.biojava/biojava-structure -->
+     https://mvnrepository.com/artifact/org.biojava/biojava-structure
     <dependency>
       <groupId>org.biojava</groupId>
       <artifactId>biojava-structure</artifactId>
       <version>5.0.0-alpha14</version>
-    </dependency>
+    </dependency> -->
 
 
   </dependencies>

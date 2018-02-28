@@ -8,8 +8,8 @@ import datasets.DatasetCreator;
 import datasets.InputParameter;
 import weka.core.Instance;
 
-import org.biojava.nbio.structure.*;
-import org.biojava.nbio.core.sequence.DNASequence;
+//import org.biojava.nbio.structure.*;
+//import org.biojava.nbio.core.sequence.DNASequence;
 
 /**
  * Created by Vanessa Ackermann on 12.02.18.

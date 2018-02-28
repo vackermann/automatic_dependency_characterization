@@ -49,6 +49,11 @@ public class Simulation {
   }
 
   public void incrementallyAddInstances(int numInstances) {
+    if (currentIndexInDataset + numInstances > datasetSize) {
+      System.out.println(
+          "Oooops. Only " + (datasetSize - currentIndexInDataset) + " Instances left. Choose any number <= this.");
+      return;
+    }
     for (int i = currentIndexInDataset; i < numInstances + currentIndexInDataset; i++) {
       runtimePrediction.addTrainingInstance(dataset.get(i));
     }
@@ -59,6 +64,10 @@ public class Simulation {
     int numInstancesToTrainBeforePrediction = numAddedValues - currentIndexInDataset;
     if (numInstancesToTrainBeforePrediction < 0) {
       System.out.println("Failed to predict this instance, because I've already learned it.");
+    }
+    else if (numAddedValues >= datasetSize) {
+      System.out.println(
+          "Oooops. There are only " + datasetSize + " Instances in the dataset. Choose any number smaller than this.");
     }
     else {
       incrementallyAddInstances(numInstancesToTrainBeforePrediction);

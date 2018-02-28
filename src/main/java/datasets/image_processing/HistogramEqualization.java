@@ -23,12 +23,12 @@ import static datasets.image_processing.HistogramEQ.computeHistogramEQ;
  * @author Vanessa Ackermann
  * @version 1.0
  */
-public class HistogramEquilization extends DatasetCreator {
+public class HistogramEqualization extends DatasetCreator {
 
-  private static final String DATASETNAME = "HistogramEquilization";
+  private static final String DATASETNAME = "HistogramEqualization";
   private static final int NUMBEROFPARAMETERS = 2;
 
-  public HistogramEquilization() {
+  public HistogramEqualization() {
     super(DATASETNAME, NUMBEROFPARAMETERS);
     List<InputParameter> inputParameters = new LinkedList<InputParameter>();
     inputParameters.add(new InputParameter("ImageWidth", 100, 6500, true));
