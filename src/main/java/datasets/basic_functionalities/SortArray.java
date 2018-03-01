@@ -23,7 +23,7 @@ public class SortArray extends DatasetCreator {
   public SortArray() {
     super(DATASETNAME, NUMBEROFPARAMETERS);
     List<InputParameter> inputParameters = new LinkedList<InputParameter>();
-    inputParameters.add(new InputParameter("ArraySize", 1, 10000, true));
+    inputParameters.add(new InputParameter("ArraySize", 1, 10000, true, false));
     this.setInputParameters(inputParameters);
   }
 

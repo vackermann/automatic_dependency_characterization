@@ -29,8 +29,8 @@ public class AckermannFunction extends DatasetCreator {
   public AckermannFunction() {
     super(DATASETNAME, NUMBEROFPARAMETERS);
     List<InputParameter> inputParameters = new LinkedList<InputParameter>();
-    inputParameters.add(new InputParameter("n", 0, 3, true));
-    inputParameters.add(new InputParameter("m", 0, 3, true));
+    inputParameters.add(new InputParameter("n", 0, 3, true, false));
+    inputParameters.add(new InputParameter("m", 0, 3, true, false));
 
     this.setInputParameters(inputParameters);
   }

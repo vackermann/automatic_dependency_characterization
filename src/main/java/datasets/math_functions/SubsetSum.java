@@ -33,8 +33,8 @@ public class SubsetSum extends DatasetCreator {
   public SubsetSum() {
     super(DATASETNAME, NUMBEROFPARAMETERS);
     List<InputParameter> inputParameters = new LinkedList<InputParameter>();
-    inputParameters.add(new InputParameter("ArraySize", 1, 10000, true));
-    inputParameters.add(new InputParameter("Sum", 1, 100000, true));
+    inputParameters.add(new InputParameter("ArraySize", 1, 10000, true, false));
+    inputParameters.add(new InputParameter("Sum", 1, 100000, true, false));
 
     this.setInputParameters(inputParameters);
   }

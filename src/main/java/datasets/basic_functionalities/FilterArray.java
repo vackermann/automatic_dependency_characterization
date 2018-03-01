@@ -25,8 +25,8 @@ public class FilterArray extends DatasetCreator {
   public FilterArray() {
     super(DATASETNAME, NUMBEROFPARAMETERS);
     List<InputParameter> inputParameters = new LinkedList<InputParameter>();
-    inputParameters.add(new InputParameter("ArraySize", 0, 100000, true));
-    inputParameters.add(new InputParameter("FilterKey", 0, 100000, true));
+    inputParameters.add(new InputParameter("ArraySize", 0, 100000, true, false));
+    inputParameters.add(new InputParameter("FilterKey", 0, 100000, true, false));
     this.setInputParameters(inputParameters);
   }
 

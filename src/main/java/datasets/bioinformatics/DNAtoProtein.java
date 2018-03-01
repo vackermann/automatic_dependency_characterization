@@ -25,7 +25,7 @@ public class DNAtoProtein extends DatasetCreator {
   public DNAtoProtein() {
     super(DATASETNAME, NUMBEROFPARAMETERS);
     List<InputParameter> inputParameters = new LinkedList<InputParameter>();
-    inputParameters.add(new InputParameter("DNA_Length", 0, 100000, true));
+    inputParameters.add(new InputParameter("DNA_Length", 0, 100000, true, false));
     this.setInputParameters(inputParameters);
   }
 

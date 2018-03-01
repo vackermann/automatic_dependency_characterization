@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Random;
 
 import org.boon.core.Sys;
+import org.boon.di.In;
 
 import weka.core.Attribute;
 import weka.core.DenseInstance;
@@ -28,6 +29,7 @@ public abstract class DatasetCreator {
 
   private String datasetName;
   private int numberOfParameters;
+  private boolean hasNominal;
   private List<InputParameter> inputParameters;
   private static final String OUTPUTNAME = "runtime";
 
@@ -43,10 +45,16 @@ public abstract class DatasetCreator {
     this.datasetName = datasetName;
     this.numberOfParameters = inputParameters.size();
     this.inputParameters = inputParameters;
+    this.hasNominal = false;
+    for (InputParameter inputParameter : inputParameters) {
+      if (inputParameter.isNominal) {
+        this.hasNominal = true;
+      }
+    }
   }
 
   /**
-   * Abstract constructor that initializes the dataset name and creates [numberOfParametes] default input parameters.
+   * Abstract constructor that initializes the dataset name and creates [numberOfParametes] default numeric input parameters.
    *
    * @param datasetName
    *     name of dataset
@@ -58,7 +66,7 @@ public abstract class DatasetCreator {
     this.numberOfParameters = numberOfParameters;
     this.inputParameters = new ArrayList<InputParameter>();
     for (int i = 0; i < numberOfParameters; i++) {
-      inputParameters.add(new InputParameter("inputParam" + i, 0, 1000, true));
+      inputParameters.add(new InputParameter("inputParam" + i, 0, 1000, true, false));
     }
   }
 
@@ -227,12 +235,24 @@ public abstract class DatasetCreator {
   }
 
   /**
+   * @return the number of input parameters
+   */
+  public boolean hasNominal() {
+    return hasNominal;
+  }
+
+  /**
    * Sets input parameters.
    *
    * @param inputParameters
    *     numeric input parameters that influence the applications runtime
    */
   public void setInputParameters(List<InputParameter> inputParameters) {
+    for (InputParameter inputParameter : inputParameters) {
+      if (inputParameter.isNominal) {
+        this.hasNominal = true;
+      }
+    }
     this.inputParameters = inputParameters;
   }
 }

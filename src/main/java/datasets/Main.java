@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.boon.core.Sys;
+
 import datasets.basic_functionalities.FilterArray;
 import datasets.basic_functionalities.SearchArray;
 import datasets.basic_functionalities.SortArray;
@@ -19,8 +21,10 @@ import datasets.math_functions.AckermannFunction;
 import datasets.math_functions.Fibonacci;
 import datasets.math_functions.SubsetSum;
 import prediction_tool.PredictorEvaluation;
+import prediction_tool.SetDescription;
 import prediction_tool.Simulation;
 import prediction_tool.StepwiseEvaluation;
+import weka.classifiers.Evaluation;
 import weka.classifiers.functions.MultilayerPerceptron;
 import weka.classifiers.functions.SGD;
 import weka.core.Utils;
@@ -57,14 +61,36 @@ public class Main {
     //e2.createDatasetFile(100);
     //e3.createDatasetFile(100);
 
-    String name = "SortArray";
-    try {
-      StepwiseEvaluation eval = new StepwiseEvaluation("./data/arff/" + name + ".arff", name);
-      eval.evaluate();
+     /*
+        CorrelationAttributeEval correlationAttributeEval = new CorrelationAttributeEval();
+        correlationAttributeEval.buildEvaluator(trainingSet);
+        System.out.println(correlationAttributeEval.evaluateAttribute(0)+" "+correlationAttributeEval.evaluateAttribute(1)+" "+
+            correlationAttributeEval.evaluateAttribute(2)+" "+correlationAttributeEval.evaluateAttribute(3));
+        */
+
+    List<DatasetCreator> datasetCreators = new ArrayList<DatasetCreator>();
+
+    datasetCreators.add(a1);
+    datasetCreators.add(a2);
+    datasetCreators.add(a3);
+    datasetCreators.add(m1);
+    datasetCreators.add(m2);
+    datasetCreators.add(m3);
+    datasetCreators.add(i1);
+    datasetCreators.add(i2);
+    datasetCreators.add(i3);
+    datasetCreators.add(i4);
+    datasetCreators.add(i5);
+
+    List<SetDescription> setDescriptions = new ArrayList<>();
+
+    for (DatasetCreator datasetCreator : datasetCreators) {
+      setDescriptions.add(
+          new SetDescription(datasetCreator.getDatasetName(), setnameToARFFFilepath(datasetCreator.getDatasetName()),
+              datasetCreator.getNumberOfParameters(), datasetCreator.hasNominal()));
     }
-    catch (IOException e) {
-      e.printStackTrace();
-    }
+
+    StepwiseEvaluation.evaluatePredictorsOnSet(setDescriptions);
 
 /*
     String datasetName = "SortArray";
@@ -125,6 +151,9 @@ public class Main {
     }
     */
 
+  }
 
+  static public String setnameToARFFFilepath(String setname) {
+    return "./data/arff/" + setname + ".arff";
   }
 }

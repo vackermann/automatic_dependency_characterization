@@ -24,8 +24,8 @@ public class SHAHashing extends DatasetCreator {
   public SHAHashing() {
     super(DATASETNAME, NUMBEROFPARAMETERS);
     List<InputParameter> inputParameters = new LinkedList<InputParameter>();
-    inputParameters.add(new InputParameter("StringLength", 0, 10000, true));
-    inputParameters.add(new InputParameter("SHA-Mode (0=SHA-1, 1= SHA-256, 2=SHA-512)", 0, 2, true));
+    inputParameters.add(new InputParameter("StringLength", 0, 10000, true, false));
+    inputParameters.add(new InputParameter("SHA-Mode (0=SHA-1, 1= SHA-256, 2=SHA-512)", 0, 2, true, true));
 
     this.setInputParameters(inputParameters);
   }

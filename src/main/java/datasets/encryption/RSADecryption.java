@@ -24,9 +24,9 @@ public class RSADecryption extends DatasetCreator {
   public RSADecryption() {
     super(DATASETNAME, NUMBEROFPARAMETERS);
     List<InputParameter> inputParameters = new LinkedList<InputParameter>();
-    inputParameters.add(new InputParameter("StringLength", 0, 50, true));
+    inputParameters.add(new InputParameter("StringLength", 0, 50, true, false));
     // https://www.javamex.com/tutorials/cryptography/rsa_key_length.shtml
-    inputParameters.add(new InputParameter("KeySizeExponent(2^x)", 9, 13, true));
+    inputParameters.add(new InputParameter("KeySizeExponent(2^x)", 9, 13, true, false));
 
     this.setInputParameters(inputParameters);
   }

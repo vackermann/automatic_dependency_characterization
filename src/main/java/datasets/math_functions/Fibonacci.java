@@ -27,8 +27,8 @@ public class Fibonacci extends DatasetCreator {
   public Fibonacci() {
     super(DATASETNAME, NUMBEROFPARAMETERS);
     List<InputParameter> inputParameters = new LinkedList<InputParameter>();
-    inputParameters.add(new InputParameter("FibonacciNumber", 1, 40, true));
-    inputParameters.add(new InputParameter("ComputationMode", 0, 2, true));
+    inputParameters.add(new InputParameter("FibonacciNumber", 1, 40, true, false));
+    inputParameters.add(new InputParameter("ComputationMode", 0, 2, true, true));
 
     this.setInputParameters(inputParameters);
   }

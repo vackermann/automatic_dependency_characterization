@@ -31,8 +31,8 @@ public class HistogramEqualization extends DatasetCreator {
   public HistogramEqualization() {
     super(DATASETNAME, NUMBEROFPARAMETERS);
     List<InputParameter> inputParameters = new LinkedList<InputParameter>();
-    inputParameters.add(new InputParameter("ImageWidth", 100, 6500, true));
-    inputParameters.add(new InputParameter("ImageHeight", 100, 4010, true));
+    inputParameters.add(new InputParameter("ImageWidth", 100, 6500, true, false));
+    inputParameters.add(new InputParameter("ImageHeight", 100, 4010, true, false));
 
     this.setInputParameters(inputParameters);
   }

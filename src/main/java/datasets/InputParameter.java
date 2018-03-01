@@ -15,6 +15,7 @@ public class InputParameter {
   private double lowerBound;
   private double upperBound;
   boolean onlyIntegerValues;
+  boolean isNominal;
 
   /**
    * @return the name of the input parameter
@@ -34,12 +35,16 @@ public class InputParameter {
    *     upper bound of the parameters value range
    * @param onlyIntegerValues
    *     only integer values are allowed as parameter values
+   * @param isNominal
+   *     if input parameter has nominal values, i.e. values are without a natural order or rank
    */
-  public InputParameter(String name, double lowerBound, double upperBound, boolean onlyIntegerValues) {
+  public InputParameter(String name, double lowerBound, double upperBound, boolean onlyIntegerValues,
+      boolean isNominal) {
     this.name = name;
     this.lowerBound = lowerBound;
     this.upperBound = upperBound;
     this.onlyIntegerValues = onlyIntegerValues;
+    this.isNominal = isNominal;
   }
 
   /**
@@ -60,5 +65,9 @@ public class InputParameter {
       result = (int) Math.round(result);
     }
     return result;
+  }
+
+  public boolean getIsNominal() {
+    return isNominal;
   }
 }
