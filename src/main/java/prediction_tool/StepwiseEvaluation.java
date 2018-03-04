@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 
 import weka.classifiers.Classifier;
 import weka.classifiers.functions.LinearRegression;
@@ -33,8 +32,6 @@ import weka.core.converters.CSVSaver;
 
 import weka.classifiers.Evaluation;
 
-import static javax.management.Query.value;
-
 /**
  * Created by Vanessa Ackermann on 27.02.18.
  *
@@ -44,7 +41,7 @@ import static javax.management.Query.value;
 public class StepwiseEvaluation {
 
   static final long SEED = 1;
-  static final int[] STEPS = new int[]{10, 100, 1000, 9000, 90000};
+  static final int[] STEPS = new int[]{10, 100, 500, 1000, 5000, 9000, 50000, 90000};
   static final int TESTSET_SIZE = 1000;
   static Map<Attribute, Classifier> predictors = getPredictorsForEvaluation();
   static final int RATING_PARAM_INDEX = 7; //6 = Correlation, 7 = RRSE, 8 = REA
@@ -72,19 +69,22 @@ public class StepwiseEvaluation {
         }
         try {
           Instances trainingSet = new Instances(dataset, 1000, step);
-          double r2 = 0;
+          //double r2 = 0;
           List<Instance> evalInstancesForStep = new ArrayList<>();
+          double r2 = getR2(trainingSet);
+          //System.out.println(getR2(trainingSet));
+
 
           for (Attribute predictorAttribute : predictors.keySet()) {
             Evaluation evaluation = new Evaluation(trainingSet);
             Classifier predictor = predictors.get(predictorAttribute);
 
             long startTime = System.nanoTime() / 1000;
-            predictor.buildClassifier(testSet);
+            predictor.buildClassifier(trainingSet);
             long stopTime = System.nanoTime() / 1000;
             int buildTime = (int) (stopTime - startTime); //in microseconds
 
-            evaluation.evaluateModel(predictor, trainingSet);
+            evaluation.evaluateModel(predictor, testSet);
 
             Instance evalInstance =
                 createAndAddInstanceToEvaluationDataset(evaluationDataset, name, trainingSet.size(), numParameter,
@@ -171,6 +171,7 @@ public class StepwiseEvaluation {
       //ok accuracy, even faster
       mlp3.setOptions(Utils.splitOptions("-L 0.3 -M 0.2 -N 500 -V 0 -S 0 -E 20"));
       sgd.setOptions(Utils.splitOptions("-F 2"));
+      lir.setOptions(Utils.splitOptions("-S 1"));
     }
     catch (Exception e) {
       e.printStackTrace();
@@ -313,6 +314,34 @@ public class StepwiseEvaluation {
     Instances rrseDataset = new Instances("rrse_" + name, attributeList, 0);
 
     return rrseDataset;
+  }
+
+  static private double getR2(Instances data) {
+    double mean = 0;
+    for (int i = 0; i < data.size(); i++) {
+      mean += data.get(i).value(data.numAttributes() - 1);
+    }
+    mean = mean / data.size();
+    LinearRegression l = new LinearRegression();
+    try {
+      l.setOptions(Utils.splitOptions("-S 1"));
+      l.buildClassifier(data);
+      double upperValue = 0;
+      double lowerValue = 0;
+
+      for (int i = 0; i < data.size(); i++) {
+        upperValue += Math.pow(mean - l.classifyInstance(data.get(i)), 2);
+        lowerValue += Math.pow(mean - data.get(i).value(data.numAttributes() - 1), 2);
+      }
+      if (upperValue == 0) {
+        System.out.print(l.toString());
+      }
+      return upperValue / lowerValue;
+    }
+    catch (Exception e) {
+      e.printStackTrace();
+    }
+    return -1;
   }
 
 }
