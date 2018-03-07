@@ -57,9 +57,12 @@ public class Main {
     RSAEncryption e2 = new RSAEncryption();
     RSADecryption e3 = new RSADecryption();
 
-    //e1.createDatasetFile(100);
-    //e2.createDatasetFile(100);
-    //e3.createDatasetFile(100);
+    //e1.createDatasetFile(100000);
+    System.out.println("done 1");
+    e2.createDatasetFile(100000);
+    System.out.println("done 2");
+    e3.createDatasetFile(100000);
+    System.out.println("done 3");
 
      /*
         CorrelationAttributeEval correlationAttributeEval = new CorrelationAttributeEval();
@@ -81,6 +84,9 @@ public class Main {
     datasetCreators.add(i3);
     datasetCreators.add(i4);
     datasetCreators.add(i5);
+    datasetCreators.add(e1);
+    datasetCreators.add(e2);
+    datasetCreators.add(e3);
 
     List<SetDescription> setDescriptions = new ArrayList<>();
 
@@ -104,52 +110,6 @@ public class Main {
       e.printStackTrace();
     }
 */
-
-    /*
-    List<String> datasetNames = new ArrayList<String>();
-    datasetNames.add("CropImage");
-    datasetNames.add(("SortArray"));
-
-    MultilayerPerceptron mlp = new MultilayerPerceptron();
-    SGD sdg = new SGD();
-    String[] options = new String[2];
-    options[0] = "-F";
-    options[1] = "2";
-    try {
-      sdg.setOptions(options);
-      mlp.setOptions(Utils.splitOptions("-L 0.1 -M 0.2 -N 2000 -V 0 -S 0 -E 20 -H 3"));
-    }
-    catch (Exception e) {
-      e.printStackTrace();
-    }
-
-    String report = PredictorEvaluation.evaluatePredictor(sdg, PredictorEvaluation.getFileListFromDatasetNames(datasetNames));
-    System.out.println(report);
-*/
-
-    /*
-    String datasetName = "SortArray";
-    ArffLoader loader = new ArffLoader();
-    try {
-      loader.setFile(new File("./data/arff/" + datasetName + ".arff"));
-      Instances data = loader.getStructure();
-      Instance insta = loader.getNextInstance(data);
-      double runtime = insta.value(insta.numAttributes()-1);
-      System.out.println("Actual runtime: "+runtime);
-      for (int i=0; i<=90000; i++) {
-        data.add(loader.getNextInstance(data));
-        if (i % 1000 == 0) {
-          RuntimePrediction pred = new RuntimePrediction(data);
-          double predicted = pred.predictRuntimeForInstance(insta);
-          System.out.println("Error: "+Math.round(runtime-predicted)+" for prediction: "+predicted);
-        }
-      }
-
-    }
-    catch (Exception e) {
-      e.printStackTrace();
-    }
-    */
 
   }
 

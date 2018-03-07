@@ -32,6 +32,8 @@ import weka.core.converters.CSVSaver;
 
 import weka.classifiers.Evaluation;
 
+import static javafx.scene.input.KeyCode.M;
+
 /**
  * Created by Vanessa Ackermann on 27.02.18.
  *
@@ -41,10 +43,10 @@ import weka.classifiers.Evaluation;
 public class StepwiseEvaluation {
 
   static final long SEED = 1;
-  static final int[] STEPS = new int[]{10, 100, 500, 1000, 5000, 9000, 50000, 90000};
+  static final int[] STEPS = new int[]{10, 100, 500, 1000, 5000, 9000};
   static final int TESTSET_SIZE = 1000;
   static Map<Attribute, Classifier> predictors = getPredictorsForEvaluation();
-  static final int RATING_PARAM_INDEX = 7; //6 = Correlation, 7 = RRSE, 8 = REA
+  static final int RATING_PARAM_INDEX = 6; //6 = accuracy, 7 = RRSE, 8 = REA
 
   public StepwiseEvaluation() {
   }
@@ -54,7 +56,10 @@ public class StepwiseEvaluation {
     Instances evaluationDataset = createEvaluationDataset(setName, setDescriptions);
     Instances bestPredictorDataset = createBestPredictorDataset(setName);
 
+    int numSets = setDescriptions.size();
+    int indexSet = 0;
     for (SetDescription setDescription : setDescriptions) {
+      indexSet++;
       String name = setDescription.getName();
       String filepath = setDescription.getFilepath();
       int numParameter = setDescription.getNumParameter();
@@ -62,18 +67,17 @@ public class StepwiseEvaluation {
 
       Instances dataset = loadDatasetFromFilepath(filepath);
       Instances testSet = new Instances(dataset, 0, TESTSET_SIZE);
+      double meanTestSet = getMeanClassValue(testSet);
 
       for (Integer step : STEPS) {
+        System.out.println("Set " + indexSet + "/" + numSets + " (steps: " + step + ")");
         if (step > dataset.size() - 1000) {
           break;
         }
         try {
           Instances trainingSet = new Instances(dataset, 1000, step);
-          //double r2 = 0;
           List<Instance> evalInstancesForStep = new ArrayList<>();
           double r2 = getR2(trainingSet);
-          //System.out.println(getR2(trainingSet));
-
 
           for (Attribute predictorAttribute : predictors.keySet()) {
             Evaluation evaluation = new Evaluation(trainingSet);
@@ -85,10 +89,12 @@ public class StepwiseEvaluation {
             int buildTime = (int) (stopTime - startTime); //in microseconds
 
             evaluation.evaluateModel(predictor, testSet);
+            double accuracy = (1 - (evaluation.meanAbsoluteError() / meanTestSet)) * 100;
+
 
             Instance evalInstance =
                 createAndAddInstanceToEvaluationDataset(evaluationDataset, name, trainingSet.size(), numParameter,
-                    nominal, r2, predictorAttribute.name(), evaluation.correlationCoefficient(),
+                    nominal, r2, predictorAttribute.name(), accuracy,
                     evaluation.rootRelativeSquaredError(), evaluation.relativeAbsoluteError(), buildTime);
             evalInstancesForStep.add(evalInstance);
           }
@@ -171,7 +177,7 @@ public class StepwiseEvaluation {
       //ok accuracy, even faster
       mlp3.setOptions(Utils.splitOptions("-L 0.3 -M 0.2 -N 500 -V 0 -S 0 -E 20"));
       sgd.setOptions(Utils.splitOptions("-F 2"));
-      lir.setOptions(Utils.splitOptions("-S 1"));
+      //lir.setOptions(Utils.splitOptions("-S 1"));
     }
     catch (Exception e) {
       e.printStackTrace();
@@ -200,7 +206,7 @@ public class StepwiseEvaluation {
 
   static private double getPenalty(double ratingParam) {
     //System.out.println(rrse+ " - "+(time/size)+" - "+name);
-    return (ratingParam);
+    return (-ratingParam);
   }
 
   static private String getBestPredictorName(List<Instance> instances) {
@@ -230,7 +236,7 @@ public class StepwiseEvaluation {
   }
 
   static private Instance createAndAddInstanceToEvaluationDataset(Instances evaluationDatset, String name, int size,
-      int numParameter, int hasNominal, double r2, String predictorName, double correlation, double rrse, double rea,
+      int numParameter, int hasNominal, double r2, String predictorName, double accuracy, double rrse, double rea,
       int time) {
     Instance instance = new DenseInstance(evaluationDatset.numAttributes());
     instance.setDataset(evaluationDatset);
@@ -240,7 +246,7 @@ public class StepwiseEvaluation {
     instance.setValue(3, hasNominal);
     instance.setValue(4, r2);
     instance.setValue(5, predictorName);
-    instance.setValue(6, correlation);
+    instance.setValue(6, accuracy);
     instance.setValue(7, rrse);
     instance.setValue(8, rea);
     instance.setValue(9, time);
@@ -291,8 +297,8 @@ public class StepwiseEvaluation {
     attributeList.add(r2);
     Attribute pred = new Attribute("Predictor", predictorNames); //Index 5
     attributeList.add(pred);
-    Attribute correlation = new Attribute("Correlation"); //Index 6
-    attributeList.add(correlation);
+    Attribute accuracy = new Attribute("Accuracy"); //Index 6
+    attributeList.add(accuracy);
     Attribute rrse = new Attribute("RRSE"); //Index 7
     attributeList.add(rrse);
     Attribute rea = new Attribute("REA"); //Index 8
@@ -317,11 +323,7 @@ public class StepwiseEvaluation {
   }
 
   static private double getR2(Instances data) {
-    double mean = 0;
-    for (int i = 0; i < data.size(); i++) {
-      mean += data.get(i).value(data.numAttributes() - 1);
-    }
-    mean = mean / data.size();
+    double mean = getMeanClassValue(data);
     LinearRegression l = new LinearRegression();
     try {
       l.setOptions(Utils.splitOptions("-S 1"));
@@ -342,6 +344,15 @@ public class StepwiseEvaluation {
       e.printStackTrace();
     }
     return -1;
+  }
+
+  static double getMeanClassValue(Instances data) {
+    double mean = 0;
+    for (int i = 0; i < data.size(); i++) {
+      mean += data.get(i).value(data.numAttributes() - 1);
+    }
+    mean = mean / data.size();
+    return mean;
   }
 
 }
