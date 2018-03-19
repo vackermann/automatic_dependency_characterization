@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-
 import weka.classifiers.Classifier;
 import weka.classifiers.functions.LinearRegression;
 import weka.classifiers.functions.MultilayerPerceptron;
@@ -34,6 +33,17 @@ import weka.classifiers.Evaluation;
 
 import static javafx.scene.input.KeyCode.M;
 
+/*
+
+* @startuml
+
+* car --|> wheel
+
+
+* @enduml
+
+*/
+
 /**
  * Created by Vanessa Ackermann on 27.02.18.
  *
@@ -42,16 +52,24 @@ import static javafx.scene.input.KeyCode.M;
  */
 public class StepwiseEvaluation {
 
-  static final long SEED = 1;
-  static final int[] STEPS = new int[]{10, 100, 500, 1000, 5000, 9000};
+  static final int[] STEPS = new int[]{10, 100}; //{10, 100, 500, 1000, 3000, 6000, 9000}
   static final int TESTSET_SIZE = 1000;
-  static Map<Attribute, Classifier> predictors = getPredictorsForEvaluation();
-  static final int RATING_PARAM_INDEX = 6; //6 = accuracy, 7 = RRSE, 8 = REA
+  static Map<Attribute, Classifier> predictors = Predictors.getPredictorsAsMap();
+  static final int RATING_PARAM_INDEX = 10; //10 = MAE, 11 = MAPE, 12 = TimeForTraining
 
   public StepwiseEvaluation() {
   }
 
-  static public void evaluatePredictorsOnSet(List<SetDescription> setDescriptions) {
+  static public void evaluatePredictorsOnSetsMultipleTimes(List<SetDescription> setDescriptions, int numIterations) {
+    Instances bestPredictorDataset = evaluatePredictorsOnSets(setDescriptions, 0);
+    for (int seed = 1; seed < numIterations; seed++) {
+      Instances currentBestPredictorDataset = evaluatePredictorsOnSets(setDescriptions, seed);
+      bestPredictorDataset.addAll(currentBestPredictorDataset);
+    }
+    createCSVFileForDataset(bestPredictorDataset, "bestPredictor_total_" + numIterations);
+  }
+
+  static public Instances evaluatePredictorsOnSets(List<SetDescription> setDescriptions, int seed) {
     String setName = "total";
     Instances evaluationDataset = createEvaluationDataset(setName, setDescriptions);
     Instances bestPredictorDataset = createBestPredictorDataset(setName);
@@ -66,18 +84,25 @@ public class StepwiseEvaluation {
       int nominal = setDescription.hasNominal ? 1 : 0;
 
       Instances dataset = loadDatasetFromFilepath(filepath);
+      dataset.randomize(new Random(seed));
       Instances testSet = new Instances(dataset, 0, TESTSET_SIZE);
-      double meanTestSet = getMeanClassValue(testSet);
 
       for (Integer step : STEPS) {
         System.out.println("Set " + indexSet + "/" + numSets + " (steps: " + step + ")");
-        if (step > dataset.size() - 1000) {
+        if (step > dataset.size() - TESTSET_SIZE) {
           break;
         }
         try {
-          Instances trainingSet = new Instances(dataset, 1000, step);
+          Instances trainingSet = new Instances(dataset, TESTSET_SIZE, step);
           List<Instance> evalInstancesForStep = new ArrayList<>();
-          double r2 = getR2(trainingSet);
+
+          //calculate trainin set charactersitics
+          double size = DatasetCharacteristics.getSize(trainingSet);
+          double runtimeRange = DatasetCharacteristics.getRangeOfClassAttribute(trainingSet);
+          double runtimeCV = DatasetCharacteristics.getCVOfClassAttribute(trainingSet);
+          double highestCorrelation = DatasetCharacteristics.getHighestCorrelation(trainingSet);
+          double lowestCorrelation = DatasetCharacteristics.getLowestCorrelation(trainingSet);
+          double r2LinReg = DatasetCharacteristics.getR2ForLinReg(trainingSet);
 
           for (Attribute predictorAttribute : predictors.keySet()) {
             Evaluation evaluation = new Evaluation(trainingSet);
@@ -88,26 +113,29 @@ public class StepwiseEvaluation {
             long stopTime = System.nanoTime() / 1000;
             int buildTime = (int) (stopTime - startTime); //in microseconds
 
+            double mape = getMeanAbsolutePercentageError(predictor, testSet);
+            //System.out.println(mape + predictorAttribute.name());
+
             evaluation.evaluateModel(predictor, testSet);
-            double accuracy = (1 - (evaluation.meanAbsoluteError() / meanTestSet)) * 100;
 
 
             Instance evalInstance =
                 createAndAddInstanceToEvaluationDataset(evaluationDataset, name, trainingSet.size(), numParameter,
-                    nominal, r2, predictorAttribute.name(), accuracy,
-                    evaluation.rootRelativeSquaredError(), evaluation.relativeAbsoluteError(), buildTime);
+                    nominal, runtimeRange, runtimeCV, highestCorrelation, lowestCorrelation, r2LinReg,
+                    predictorAttribute.name(), evaluation.meanAbsoluteError(), mape, buildTime);
             evalInstancesForStep.add(evalInstance);
           }
           addToBestPredictorDataset(bestPredictorDataset, evalInstancesForStep, trainingSet.size(), numParameter,
-              nominal, r2);
+              runtimeRange, runtimeCV, highestCorrelation, lowestCorrelation, r2LinReg);
         }
         catch (Exception e) {
           e.printStackTrace();
         }
       }
     }
-    createCSVFileForDataset(evaluationDataset, "eval_" + setName);
-    createCSVFileForDataset(bestPredictorDataset, "bestPredictor_" + setName);
+    createCSVFileForDataset(evaluationDataset, "eval_" + seed + "_" + setName);
+    return bestPredictorDataset;
+    //createCSVFileForDataset(bestPredictorDataset, "bestPredictor_" + setName);
   }
 
   static void createCSVFileForDataset(Instances dataset, String filename) {
@@ -141,7 +169,6 @@ public class StepwiseEvaluation {
       loader.setFile(file);
       dataset = loader.getDataSet();
       dataset.setClassIndex(dataset.numAttributes() - 1);
-      dataset.randomize(new Random(SEED));
       return dataset;
     }
     catch (IOException e) {
@@ -150,63 +177,10 @@ public class StepwiseEvaluation {
     return null;
   }
 
-  static private HashMap<Attribute, Classifier> getPredictorsForEvaluation() {
-    HashMap<Attribute, Classifier> predictors = new HashMap<Attribute, Classifier>();
-    ZeroR zer = new ZeroR();
-    MultilayerPerceptron mlp = new MultilayerPerceptron();
-    MultilayerPerceptron mlp2 = new MultilayerPerceptron();
-    MultilayerPerceptron mlp3 = new MultilayerPerceptron();
-    MultilayerPerceptron mlp4 = new MultilayerPerceptron();
-    SGD sgd = new SGD();
-    RandomForest rdf = new RandomForest();
-    SMOreg smo = new SMOreg();
-    LinearRegression lir = new LinearRegression();
-    SimpleCart sca = new SimpleCart();
-    IBk ibk = new IBk();
-    Bagging bag = new Bagging();
-    M5P m5p = new M5P();
-    REPTree rep = new REPTree();
 
-    try {
-      //highest accuracy, but super low
-      mlp.setOptions(Utils.splitOptions("-L 0.1 -M 0.2 -N 2000 -V 0 -S 0 -E 20 -H 3"));
-      //highest accuracy, speed scales with #attributes
-      mlp2.setOptions(Utils.splitOptions("-L 0.1 -M 0.2 -N 2000 -V 0 -S 0 -E 20"));
-      //ok accuracy
-      mlp3.setOptions(Utils.splitOptions("-L 0.1 -M 0.2 -N 500 -V 0 -S 0 -E 20"));
-      //ok accuracy, even faster
-      mlp3.setOptions(Utils.splitOptions("-L 0.3 -M 0.2 -N 500 -V 0 -S 0 -E 20"));
-      sgd.setOptions(Utils.splitOptions("-F 2"));
-      //lir.setOptions(Utils.splitOptions("-S 1"));
-    }
-    catch (Exception e) {
-      e.printStackTrace();
-    }
-
-    //MLPs with different configs
-        /*predictors.put(new Attribute("MLP"), mlp);
-    predictors.put(new Attribute("MLP2"), mlp2);
-    predictors.put(new Attribute("MLP3"), mlp3);
-    predictors.put(new Attribute("MLP4"), mlp4); */
-
-    predictors.put(new Attribute("ZeroR"), zer);
-    predictors.put(new Attribute("MLP"), mlp2);
-    predictors.put(new Attribute("SGD"), sgd);
-    predictors.put(new Attribute("RandomF"), rdf);
-    predictors.put(new Attribute("SVM"), smo);
-    predictors.put(new Attribute("LinReg"), lir);
-    //predictors.put(new Attribute("CART"), sca);
-    predictors.put(new Attribute("IBk"), ibk);
-    predictors.put(new Attribute("Bagging"), bag);
-    predictors.put(new Attribute("M5P"), m5p);
-    predictors.put(new Attribute("REPTree"), rep);
-
-    return predictors;
-  }
 
   static private double getPenalty(double ratingParam) {
-    //System.out.println(rrse+ " - "+(time/size)+" - "+name);
-    return (-ratingParam);
+    return (ratingParam);
   }
 
   static private String getBestPredictorName(List<Instance> instances) {
@@ -215,7 +189,7 @@ public class StepwiseEvaluation {
     for (Instance instance : instances) {
       double instancePenalty = getPenalty(instance.value(RATING_PARAM_INDEX));
       if (instancePenalty < currentBestValue) {
-        currentBestName = instance.stringValue(5);
+        currentBestName = instance.stringValue(9); //Predictor name
         currentBestValue = instancePenalty;
       }
     }
@@ -223,33 +197,40 @@ public class StepwiseEvaluation {
   }
 
   static private void addToBestPredictorDataset(Instances bestPredictorDataset, List<Instance> instances, int size,
-      int numParameter, int hasNominal, double r2) {
+      int numParameter, double runtimeRange, double runtimeCV, double highestCorrelation, double lowestCorrelation,
+      double r2LinReg) {
     String bestPredictorName = getBestPredictorName(instances);
     Instance instance = new DenseInstance(bestPredictorDataset.numAttributes());
     instance.setDataset(bestPredictorDataset);
     instance.setValue(0, size);
     instance.setValue(1, numParameter);
-    instance.setValue(2, hasNominal);
-    instance.setValue(3, r2);
-    instance.setValue(4, bestPredictorName);
+    instance.setValue(2, runtimeRange);
+    instance.setValue(3, runtimeCV);
+    instance.setValue(4, highestCorrelation);
+    instance.setValue(5, lowestCorrelation);
+    instance.setValue(6, r2LinReg);
+    instance.setValue(7, bestPredictorName);
     bestPredictorDataset.add(instance);
   }
 
   static private Instance createAndAddInstanceToEvaluationDataset(Instances evaluationDatset, String name, int size,
-      int numParameter, int hasNominal, double r2, String predictorName, double accuracy, double rrse, double rea,
-      int time) {
+      int numParameter, int hasNominal, double runtimeRange, double runtimeCV, double highestCorrelation,
+      double lowestCorrelation, double r2LinReg, String predictorName, double mae, double mape, int time) {
     Instance instance = new DenseInstance(evaluationDatset.numAttributes());
     instance.setDataset(evaluationDatset);
     instance.setValue(0, name);
     instance.setValue(1, size);
     instance.setValue(2, numParameter);
     instance.setValue(3, hasNominal);
-    instance.setValue(4, r2);
-    instance.setValue(5, predictorName);
-    instance.setValue(6, accuracy);
-    instance.setValue(7, rrse);
-    instance.setValue(8, rea);
-    instance.setValue(9, time);
+    instance.setValue(4, runtimeRange);
+    instance.setValue(5, runtimeCV);
+    instance.setValue(6, highestCorrelation);
+    instance.setValue(7, lowestCorrelation);
+    instance.setValue(8, r2LinReg);
+    instance.setValue(9, predictorName);
+    instance.setValue(10, mae);
+    instance.setValue(11, mape);
+    instance.setValue(12, time);
     evaluationDatset.add(instance);
     return instance;
   }
@@ -260,15 +241,22 @@ public class StepwiseEvaluation {
       predictorNames.add(predictorAttribute.name());
     }
     ArrayList<Attribute> attributeList = new ArrayList<Attribute>();
-    Attribute trainingsetSize = new Attribute("Size"); //Index 0
-    attributeList.add(trainingsetSize);
+
+    Attribute size = new Attribute("Size"); //Index 0
+    attributeList.add(size);
     Attribute numParam = new Attribute("NumParam"); //Index 1
     attributeList.add(numParam);
-    Attribute hasNominal = new Attribute("HasNominal"); //Index 2
-    attributeList.add(hasNominal);
-    Attribute r2 = new Attribute("R2"); //Index 3
-    attributeList.add(r2);
-    Attribute pred = new Attribute("Predictor", predictorNames); //Index 4
+    Attribute runtimeRange = new Attribute("RuntimeRange"); //Index 2
+    attributeList.add(runtimeRange);
+    Attribute runtimeCV = new Attribute("RuntimeCV"); //Index 3
+    attributeList.add(runtimeCV);
+    Attribute highestCorrelation = new Attribute("HighestCorrelation"); //Index 4
+    attributeList.add(highestCorrelation);
+    Attribute lowestCorrelation = new Attribute("LowestCorrelation"); //Index 5
+    attributeList.add(lowestCorrelation);
+    Attribute r2LinReg = new Attribute("R2LinReg"); //Index 6
+    attributeList.add(r2LinReg);
+    Attribute pred = new Attribute("Predictor", predictorNames); //Index 7
     attributeList.add(pred);
     Instances bestPredictorDataset = new Instances("bestPredictors_" + name, attributeList, 0);
 
@@ -293,66 +281,45 @@ public class StepwiseEvaluation {
     attributeList.add(numParam);
     Attribute hasNominal = new Attribute("HasNominal"); //Index 3
     attributeList.add(hasNominal);
-    Attribute r2 = new Attribute("R2"); //Index 4
-    attributeList.add(r2);
-    Attribute pred = new Attribute("Predictor", predictorNames); //Index 5
+    Attribute runtimeRange = new Attribute("RuntimeRange"); //Index 4
+    attributeList.add(runtimeRange);
+    Attribute runtimeCV = new Attribute("RuntimeCV"); //Index 5
+    attributeList.add(runtimeCV);
+    Attribute highestCorrelation = new Attribute("HighestCorrelation"); //Index 6
+    attributeList.add(highestCorrelation);
+    Attribute lowestCorrelation = new Attribute("LowestCorrelation"); //Index 7
+    attributeList.add(lowestCorrelation);
+    Attribute r2LinReg = new Attribute("R2LinReg"); //Index 8
+    attributeList.add(r2LinReg);
+    Attribute pred = new Attribute("Predictor", predictorNames); //Index 9
     attributeList.add(pred);
-    Attribute accuracy = new Attribute("Accuracy"); //Index 6
-    attributeList.add(accuracy);
-    Attribute rrse = new Attribute("RRSE"); //Index 7
-    attributeList.add(rrse);
-    Attribute rea = new Attribute("REA"); //Index 8
-    attributeList.add(rea);
-    Attribute time = new Attribute("Time"); //Index 9
+    Attribute mae = new Attribute("MAE"); //Index 10
+    attributeList.add(mae);
+    Attribute mape = new Attribute("MAPE"); //Index 11
+    attributeList.add(mape);
+    Attribute time = new Attribute("Time"); //Index 12
     attributeList.add(time);
     Instances evaluationDataset = new Instances("evaluation_" + name, attributeList, 0);
 
     return evaluationDataset;
   }
 
-  static private Instances createRRSEDataset(String name) {
-    ArrayList<Attribute> attributeList = new ArrayList<Attribute>();
-    Attribute size = new Attribute("Size");
-    attributeList.add(size);
-    for (Attribute predictorAttribute : predictors.keySet()) {
-      attributeList.add(predictorAttribute);
-    }
-    Instances rrseDataset = new Instances("rrse_" + name, attributeList, 0);
-
-    return rrseDataset;
-  }
-
-  static private double getR2(Instances data) {
-    double mean = getMeanClassValue(data);
-    LinearRegression l = new LinearRegression();
-    try {
-      l.setOptions(Utils.splitOptions("-S 1"));
-      l.buildClassifier(data);
-      double upperValue = 0;
-      double lowerValue = 0;
-
-      for (int i = 0; i < data.size(); i++) {
-        upperValue += Math.pow(mean - l.classifyInstance(data.get(i)), 2);
-        lowerValue += Math.pow(mean - data.get(i).value(data.numAttributes() - 1), 2);
+  static double getMeanAbsolutePercentageError(Classifier predictor, Instances testSet) {
+    int setSize = testSet.size();
+    double totalRelativeError = 0;
+    for (int i = 0; i < setSize; i++) {
+      double prediction = 0;
+      try {
+        prediction = predictor.classifyInstance(testSet.get(i));
       }
-      if (upperValue == 0) {
-        System.out.print(l.toString());
+      catch (Exception e) {
+        e.printStackTrace();
       }
-      return upperValue / lowerValue;
+      double observation = testSet.get(i).value(testSet.classAttribute());
+      totalRelativeError += Math.abs((prediction - observation) / observation);
     }
-    catch (Exception e) {
-      e.printStackTrace();
-    }
-    return -1;
+    return (totalRelativeError / setSize) * 100;
   }
 
-  static double getMeanClassValue(Instances data) {
-    double mean = 0;
-    for (int i = 0; i < data.size(); i++) {
-      mean += data.get(i).value(data.numAttributes() - 1);
-    }
-    mean = mean / data.size();
-    return mean;
-  }
 
 }

@@ -3,10 +3,13 @@ package datasets;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.boon.core.Sys;
 
 import datasets.basic_functionalities.FilterArray;
+import datasets.basic_functionalities.GetRandomInt;
+import datasets.basic_functionalities.LoadFile;
 import datasets.basic_functionalities.SearchArray;
 import datasets.basic_functionalities.SortArray;
 import datasets.encryption.RSADecryption;
@@ -20,6 +23,7 @@ import datasets.image_processing.ScaleImage;
 import datasets.math_functions.AckermannFunction;
 import datasets.math_functions.Fibonacci;
 import datasets.math_functions.SubsetSum;
+import prediction_tool.MetaClassifier;
 import prediction_tool.PredictorEvaluation;
 import prediction_tool.SetDescription;
 import prediction_tool.Simulation;
@@ -39,6 +43,8 @@ public class Main {
     SortArray a1 = new SortArray();
     SearchArray a2 = new SearchArray();
     FilterArray a3 = new FilterArray();
+    LoadFile a4 = new LoadFile();
+    GetRandomInt a5 = new GetRandomInt();
 
     // Math functions
     AckermannFunction m1 = new AckermannFunction();
@@ -47,7 +53,7 @@ public class Main {
 
     //Image processing
     RGBFilter i1 = new RGBFilter();
-    CropImage i2 = new CropImage();
+    //CropImage i2 = new CropImage();
     ScaleImage i3 = new ScaleImage();
     BlurImage i4 = new BlurImage();
     HistogramEqualization i5 = new HistogramEqualization();
@@ -57,30 +63,18 @@ public class Main {
     RSAEncryption e2 = new RSAEncryption();
     RSADecryption e3 = new RSADecryption();
 
-    //e1.createDatasetFile(100000);
-    System.out.println("done 1");
-    e2.createDatasetFile(100000);
-    System.out.println("done 2");
-    e3.createDatasetFile(100000);
-    System.out.println("done 3");
-
-     /*
-        CorrelationAttributeEval correlationAttributeEval = new CorrelationAttributeEval();
-        correlationAttributeEval.buildEvaluator(trainingSet);
-        System.out.println(correlationAttributeEval.evaluateAttribute(0)+" "+correlationAttributeEval.evaluateAttribute(1)+" "+
-            correlationAttributeEval.evaluateAttribute(2)+" "+correlationAttributeEval.evaluateAttribute(3));
-        */
-
     List<DatasetCreator> datasetCreators = new ArrayList<DatasetCreator>();
 
     datasetCreators.add(a1);
     datasetCreators.add(a2);
     datasetCreators.add(a3);
+    datasetCreators.add(a4);
+    datasetCreators.add(a5);
     datasetCreators.add(m1);
     datasetCreators.add(m2);
     datasetCreators.add(m3);
     datasetCreators.add(i1);
-    datasetCreators.add(i2);
+    //datasetCreators.add(i2);
     datasetCreators.add(i3);
     datasetCreators.add(i4);
     datasetCreators.add(i5);
@@ -96,20 +90,27 @@ public class Main {
               datasetCreator.getNumberOfParameters(), datasetCreator.hasNominal()));
     }
 
-    StepwiseEvaluation.evaluatePredictorsOnSet(setDescriptions);
+    //StepwiseEvaluation.evaluatePredictorsOnSetsMultipleTimes(setDescriptions, 5);
 
-/*
-    String datasetName = "SortArray";
+    MetaClassifier metaClassifier = new MetaClassifier();
+    //metaClassifier.drawMetaClassifierDecisionTree();
+
+    String datasetName = "GetRandomInt";
     try {
       Simulation sim = new Simulation("./data/arff/" + datasetName + ".arff");
-      sim.startSimulation(100);
-      sim.incrementallyAddInstances(10);
+      sim.startSimulation(10);
+      sim.incrementallyAddInstances(50);
       sim.predictAfter(100);
+      sim.predictAfter(1000);
+      sim.predictAfter(2000);
+      sim.predictAfter(5000);
+      sim.predictAfter(10000);
+      sim.predictAfter(50000);
+      sim.predictAfter(100000);
     }
     catch (IOException e) {
       e.printStackTrace();
     }
-*/
 
   }
 

@@ -45,7 +45,6 @@ public class Simulation {
     Instances batchDataset = new Instances(dataset, 0, numBatchInstances);
     currentIndexInDataset = numBatchInstances + 1;
     runtimePrediction = new RuntimePrediction(batchDataset);
-    System.out.println("Currently chosen predictor: " + runtimePrediction.predictor.toString());
   }
 
   public void incrementallyAddInstances(int numInstances) {

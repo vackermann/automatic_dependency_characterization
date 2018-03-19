@@ -24,11 +24,11 @@ public class RuntimePrediction {
 
   private Instances dataset;
   public Classifier predictor;
-  final boolean dynamicallyChangePredictor = false;
   private boolean updateablePredictor;
   private int untrainedInstances = 0;
   private int trainedInstances = 0;
   final double TRIGGER_BATCH_LEARNING_PERCENTAGE = 0.1;
+  private MetaClassifier metaClassifier = new MetaClassifier();
 
   /**
    * Constructor if no predictor exists / should be chosen according to the data set
@@ -78,38 +78,15 @@ public class RuntimePrediction {
     updateablePredictor = (predictor instanceof UpdateableClassifier);
   }
 
-  static private Classifier getBestPredictor(Instances dataset) {
-    //TODO Selection Heurisitc
-    /*
-    Use SDG (For numeric class attributes, the squared, Huber or epsilon-insensitve loss
- * function must be used. Epsilon-insensitive and Huber loss may require a much
- * higher learning rate) --> http://book2s.com/java/src/package/weka/classifiers/functions/sgd.html
-     */
-    MultilayerPerceptron mlp = new MultilayerPerceptron();
-    //mlp.setOptions(Utils.splitOptions("-L 0.1 -M 0.2 -N 2000 -V 0 -S 0 -E 20 -H 3"));
-    //Setting Parameters
-    mlp.setLearningRate(0.1);
-    mlp.setMomentum(0.2);
-    mlp.setTrainingTime(2000);
-    mlp.setHiddenLayers("3");
-
-    SGD sdg = new SGD();
-    String[] options = new String[2];
-    options[0] = "-F";
-    options[1] = "2";
-    try {
-      sdg.setOptions(options);
-    }
-    catch (Exception e) {
-      e.printStackTrace();
-    }
-    return sdg;
+  private Classifier getBestPredictor(Instances dataset) {
+    return metaClassifier.predictBestPredictorForSet(dataset);
   }
 
   public void addTrainingInstance(Instance instance) {
     instance.setDataset(dataset);
     dataset.add(instance);
     untrainedInstances++;
+    /*
     if (updateablePredictor) {
       try {
         ((UpdateableClassifier) predictor).updateClassifier(instance);
@@ -120,6 +97,7 @@ public class RuntimePrediction {
         System.out.println(e.getMessage());
       }
     }
+    */
   }
 
   public void addTrainingInstance(String csv) {
@@ -154,16 +132,15 @@ public class RuntimePrediction {
   }
 
   public void batchLearning() {
+    predictor = getBestPredictor(dataset);
     try {
-      Classifier auxclassifier = AbstractClassifier.makeCopy(predictor);
-      auxclassifier.buildClassifier(dataset);
-      predictor = auxclassifier;
-      trainedInstances = dataset.size();
-      untrainedInstances = 0;
+      predictor.buildClassifier(dataset);
     }
     catch (Exception e) {
       e.printStackTrace();
     }
+    trainedInstances = dataset.size();
+    untrainedInstances = 0;
   }
 
   public double predictRuntimeForInstance(String csv) {
@@ -176,7 +153,7 @@ public class RuntimePrediction {
 
   public double predictRuntimeForInstance(Instance instance) {
     instance.setDataset(dataset);
-    if (!updateablePredictor && untrainedInstances > trainedInstances * TRIGGER_BATCH_LEARNING_PERCENTAGE) {
+    if (untrainedInstances > trainedInstances * TRIGGER_BATCH_LEARNING_PERCENTAGE) {
       batchLearning();
     }
     double predictedRuntime = -1;
@@ -190,22 +167,4 @@ public class RuntimePrediction {
     return predictedRuntime;
   }
 
-  //Create instances
-  //Create learner
-  //Learn -> Predict -> Learn ...
-
-  /*
-  // load data
- ArffLoader loader = new ArffLoader();
- loader.setFile(new File("/some/where/data.arff"));
- Instances structure = loader.getStructure();
-
- // train Cobweb
- Cobweb cw = new Cobweb();
- cw.buildClusterer(structure);
- Instance current;
- while ((current = loader.getNextInstance(structure)) != null)
-   cw.updateClusterer(current);
- cw.updateFinished();
-   */
 }
