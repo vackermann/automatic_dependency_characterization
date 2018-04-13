@@ -33,18 +33,9 @@ import weka.classifiers.Evaluation;
 
 import static javafx.scene.input.KeyCode.M;
 
-/*
-
-* @startuml
-
-* car --|> wheel
-
-
-* @enduml
-
-*/
-
 /**
+ * Provides methods to evaluate and compare the prediction performance of different Weka classifieres on multiple data sets.
+ *
  * Created by Vanessa Ackermann on 27.02.18.
  *
  * @author Vanessa Ackermann
@@ -52,14 +43,19 @@ import static javafx.scene.input.KeyCode.M;
  */
 public class StepwiseEvaluation {
 
-  static final int[] STEPS = new int[]{10, 100}; //{10, 100, 500, 1000, 3000, 6000, 9000}
+  static final int[] STEPS = new int[]{10, 100, 500, 1000, 3000, 6000, 9000};
   static final int TESTSET_SIZE = 1000;
   static Map<Attribute, Classifier> predictors = Predictors.getPredictorsAsMap();
   static final int RATING_PARAM_INDEX = 10; //10 = MAE, 11 = MAPE, 12 = TimeForTraining
 
-  public StepwiseEvaluation() {
-  }
-
+  /**
+   * Repeats the predictor evaluation on all specified data sets numIteration times, each time with a different seed
+   * value for shuffling the data set. Saves csv file with evaluation results for each run. Saves csv file with all
+   * bestPredictor data sets from the multiple runs.
+   *
+   * @param setDescriptions
+   * @param numIterations
+   */
   static public void evaluatePredictorsOnSetsMultipleTimes(List<SetDescription> setDescriptions, int numIterations) {
     Instances bestPredictorDataset = evaluatePredictorsOnSets(setDescriptions, 0);
     for (int seed = 1; seed < numIterations; seed++) {
@@ -69,6 +65,15 @@ public class StepwiseEvaluation {
     createCSVFileForDataset(bestPredictorDataset, "bestPredictor_total_" + numIterations);
   }
 
+  /**
+   * Evaluates different predictors stepwise on the sets specified on setDescriptions. Saves evaluation results in csv file.
+   * Returns data set with entries that each contain the predictor that "performs best" on a certain evaluation sample,
+   * together with characteristics of the sampled training set. This can be used for training the MetaClassifier.
+   *
+   * @param setDescriptions
+   * @param seed
+   * @return bestPredictor data set
+   */
   static public Instances evaluatePredictorsOnSets(List<SetDescription> setDescriptions, int seed) {
     String setName = "total";
     Instances evaluationDataset = createEvaluationDataset(setName, setDescriptions);
@@ -96,7 +101,7 @@ public class StepwiseEvaluation {
           Instances trainingSet = new Instances(dataset, TESTSET_SIZE, step);
           List<Instance> evalInstancesForStep = new ArrayList<>();
 
-          //calculate trainin set charactersitics
+          //calculate training set characteristics
           double size = DatasetCharacteristics.getSize(trainingSet);
           double runtimeRange = DatasetCharacteristics.getRangeOfClassAttribute(trainingSet);
           double runtimeCV = DatasetCharacteristics.getCVOfClassAttribute(trainingSet);
@@ -114,7 +119,6 @@ public class StepwiseEvaluation {
             int buildTime = (int) (stopTime - startTime); //in microseconds
 
             double mape = getMeanAbsolutePercentageError(predictor, testSet);
-            //System.out.println(mape + predictorAttribute.name());
 
             evaluation.evaluateModel(predictor, testSet);
 
@@ -135,9 +139,13 @@ public class StepwiseEvaluation {
     }
     createCSVFileForDataset(evaluationDataset, "eval_" + seed + "_" + setName);
     return bestPredictorDataset;
-    //createCSVFileForDataset(bestPredictorDataset, "bestPredictor_" + setName);
   }
 
+  /**
+   * Saves data set to csv file with the specified filename.
+   * @param dataset
+   * @param filename
+   */
   static void createCSVFileForDataset(Instances dataset, String filename) {
     CSVSaver csvSaver = new CSVSaver();
     csvSaver.setInstances(dataset);
@@ -151,6 +159,15 @@ public class StepwiseEvaluation {
     }
   }
 
+  /**
+   * Loads data set as Weka Instances object from given filepath. Must be csv or arff file.
+   * @param filepath
+   * @return
+   *
+   *
+   * @param filepath
+   * @return data set in Weka's instances format
+   */
   static Instances loadDatasetFromFilepath(String filepath) {
     File file = new File(filepath);
     AbstractFileLoader loader;
@@ -177,12 +194,21 @@ public class StepwiseEvaluation {
     return null;
   }
 
-
-
+  /**
+   * Returns penalty value for specified rating parameter (currently: MAE). This methods can be modified in order to change the meaning of
+   * "performs best" for our MetaClassifier.
+   * @param ratingParam
+   * @return
+   */
   static private double getPenalty(double ratingParam) {
     return (ratingParam);
   }
 
+  /**
+   * Return name of predictor that "performs best" on the evaluation sample.
+   * @param instances
+   * @return
+   */
   static private String getBestPredictorName(List<Instance> instances) {
     String currentBestName = "";
     double currentBestValue = Double.MAX_VALUE;
@@ -196,6 +222,19 @@ public class StepwiseEvaluation {
     return currentBestName;
   }
 
+  /**
+   * Creates new instances with best predictor for the evaluation sample and adds it to the bestPredictor data set.
+   *
+   * @param bestPredictorDataset
+   * @param instances
+   * @param size
+   * @param numParameter
+   * @param runtimeRange
+   * @param runtimeCV
+   * @param highestCorrelation
+   * @param lowestCorrelation
+   * @param r2LinReg
+   */
   static private void addToBestPredictorDataset(Instances bestPredictorDataset, List<Instance> instances, int size,
       int numParameter, double runtimeRange, double runtimeCV, double highestCorrelation, double lowestCorrelation,
       double r2LinReg) {
@@ -213,6 +252,25 @@ public class StepwiseEvaluation {
     bestPredictorDataset.add(instance);
   }
 
+  /**
+   * Creates new evaluation data set instance for given evaluation sample and adds it to evaluation data set.
+   *
+   * @param evaluationDatset
+   * @param name
+   * @param size
+   * @param numParameter
+   * @param hasNominal
+   * @param runtimeRange
+   * @param runtimeCV
+   * @param highestCorrelation
+   * @param lowestCorrelation
+   * @param r2LinReg
+   * @param predictorName
+   * @param mae
+   * @param mape
+   * @param time
+   * @return Instance
+   */
   static private Instance createAndAddInstanceToEvaluationDataset(Instances evaluationDatset, String name, int size,
       int numParameter, int hasNominal, double runtimeRange, double runtimeCV, double highestCorrelation,
       double lowestCorrelation, double r2LinReg, String predictorName, double mae, double mape, int time) {
@@ -235,6 +293,15 @@ public class StepwiseEvaluation {
     return instance;
   }
 
+  /**
+   * Creates empty data set for training the MetaClassifier. Contains the following columns ("attributes"): Size (of training set),
+   * numParam (number of observed input parameters in data set), runtimeRange (range of observed values for target variable),
+   * runtimeCV (coefficient of determination of target variable), highestCorrelation (between any input parameter and target variable),
+   * lowestCorrelation (between any input parameter and target variable), R2LinReg (coefficient of determination of
+   * least-squared linear regression model for training set), predictor (that had least MAE for this training set).
+   * @param name of best predictor
+   * @return empty data set in Weka's Instances format
+   */
   static private Instances createBestPredictorDataset(String name) {
     List<String> predictorNames = new ArrayList<String>();
     for (Attribute predictorAttribute : predictors.keySet()) {
@@ -263,6 +330,17 @@ public class StepwiseEvaluation {
     return bestPredictorDataset;
   }
 
+  /**
+   * Creates empty data set for evaluation result entries. Contains the following columns ("attributes"): Name (of data set),
+   * size (of training set), numParam (number of observed input parameters in data set), hasNominal (data set has at least
+   * one nominal attribute as input paramteter, e.g., ComputationMode in Fibonacci), runtimeRange (range of observed values
+   * for target variable), runtimeCV (coefficient of determination of target variable), highestCorrelation (between any input
+   * parameter and target variable), lowestCorrelation (between any input parameter and target variable), R2LinReg (coefficient
+   * of determination of least-squared linear regression model for training set), predictor, MAE, MAPE, time (for fitting a model).
+   * @param name
+   * @param setDescriptions
+   * @return empty data set in Weka's Instances format
+   */
   static private Instances createEvaluationDataset(String name, List<SetDescription> setDescriptions) {
     List<String> setNames = new ArrayList<String>();
     for (SetDescription setDescription : setDescriptions) {
@@ -304,6 +382,12 @@ public class StepwiseEvaluation {
     return evaluationDataset;
   }
 
+  /**
+   * Returns mean absolute percentage error (MAPE) of trained predictor on the given test set.
+   * @param predictor
+   * @param testSet
+   * @return mean absolute percentage error (MAPE)
+   */
   static double getMeanAbsolutePercentageError(Classifier predictor, Instances testSet) {
     int setSize = testSet.size();
     double totalRelativeError = 0;
@@ -320,6 +404,4 @@ public class StepwiseEvaluation {
     }
     return (totalRelativeError / setSize) * 100;
   }
-
-
 }

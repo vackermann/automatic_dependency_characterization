@@ -25,7 +25,7 @@
         <module name="automatic_dependency_characterization" />
       </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel>
+    <bytecodeTargetLevel target="1.5">
       <module name="automatic_dependency_characterization" target="1.8" />
     </bytecodeTargetLevel>
   </component>

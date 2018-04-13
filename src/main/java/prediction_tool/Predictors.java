@@ -18,13 +18,20 @@ import weka.core.Attribute;
 import weka.core.Utils;
 
 /**
- * Created by Vanessa Ackermann on 19.03.18.
+ * Collection of prediction techniques ("predictios") to be used for regression task. All predictors implement the
+ * Weka Classifier interface.
  *
  * @author Vanessa Ackermann
  * @version 1.0
  */
 public class Predictors {
 
+  /**
+   * Creates a map that maps the name abbrevation of the prediction technique to an instance of the predictor
+   * (e.g., ANN -> new Multilayerperceptron).
+   *
+   * @return
+   */
   static HashMap<Attribute, Classifier> getPredictorsAsMap() {
     HashMap<Attribute, Classifier> predictors = new HashMap<Attribute, Classifier>();
 
@@ -39,6 +46,8 @@ public class Predictors {
     M5P m5p = new M5P();
     REPTree rep = new REPTree();
 
+    // Changes some of the (default) predictor options (e.g., number of bags for RandomForest).
+    // Optimization of predictor option settings is appreciated for further prediction accuracy gains.
     try {
       lir.setOptions(Utils.splitOptions("-S 1"));
       sgd.setOptions(Utils.splitOptions("-F 4"));
@@ -69,6 +78,11 @@ public class Predictors {
     return predictors;
   }
 
+  /**
+   * Returns Predictor object with the given name abbrevation.
+   * @param predictorName
+   * @return
+   */
   static Classifier getPredictorWithName(String predictorName) {
     HashMap<Attribute, Classifier> predictorMap = getPredictorsAsMap();
     for (Attribute attribute : predictorMap.keySet()) {

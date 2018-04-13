@@ -1,18 +1,10 @@
 package datasets.math_functions;
 
-import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
-import javax.imageio.ImageIO;
-
 import datasets.DatasetCreator;
 import datasets.InputParameter;
-import ij.ImagePlus;
-import ij.process.ImageProcessor;
 import weka.core.Instance;
 
 /**

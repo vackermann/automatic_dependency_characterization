@@ -1,21 +1,18 @@
 package prediction_tool;
 
+import java.io.File;
 import java.util.ArrayList;
-
-import weka.classifiers.AbstractClassifier;
+import java.util.Scanner;
 import weka.classifiers.Classifier;
-import weka.classifiers.UpdateableClassifier;
-import weka.classifiers.functions.MultilayerPerceptron;
-import weka.classifiers.functions.SGD;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
-
-import static weka.core.Utils.splitOptions;
-
 /**
- * Created by Vanessa Ackermann on 14.02.18.
+ *
+ * A RuntimePrediction object can be used to predict the performance behavoiour of an application via parametric
+ * dependecies learned from monitoring data. All recieved monoring data instances and the current predictor are saved
+ * as object variables.
  *
  * @author Vanessa Ackermann
  * @version 1.0
@@ -23,15 +20,14 @@ import static weka.core.Utils.splitOptions;
 public class RuntimePrediction {
 
   private Instances dataset;
-  public Classifier predictor;
-  private boolean updateablePredictor;
+  private Classifier predictor;
   private int untrainedInstances = 0;
   private int trainedInstances = 0;
-  final double TRIGGER_BATCH_LEARNING_PERCENTAGE = 0.1;
+  final double THRESHOLD_LEARNING = 0.1;
   private MetaClassifier metaClassifier = new MetaClassifier();
 
   /**
-   * Constructor if no predictor exists / should be chosen according to the data set
+   * Constructor if no predictor exists / should be chosen according to the data set.
    *
    * @param dataset
    *
@@ -59,12 +55,11 @@ public class RuntimePrediction {
     dataset.setClassIndex(dataset.numAttributes() - 1);
     predictor = getBestPredictor(dataset);
     batchLearning();
-    updateablePredictor = (predictor instanceof UpdateableClassifier);
   }
 
   /**
    * Constructor if predictor already exists
-   * (e.g. when getting back to a previously trained model or having a favoured prediction method to be used)
+   * (e.g. when getting back to a previously trained model or having a favoured prediction method to be used).
    *
    * @param dataset
    * @param predictor
@@ -75,31 +70,33 @@ public class RuntimePrediction {
     this.dataset = dataset;
     this.dataset.setClassIndex(dataset.numAttributes() - 1);
     this.predictor = predictor;
-    updateablePredictor = (predictor instanceof UpdateableClassifier);
   }
 
+  /**
+   * Get the best predictor for the available data set via prediction by the meta-classifer.
+   *
+   * @param dataset
+   *
+   * @return Classifier
+   */
   private Classifier getBestPredictor(Instances dataset) {
     return metaClassifier.predictBestPredictorForSet(dataset);
   }
 
+  /**
+   * Adds new monitoring data instance to training set.
+   * @param instance
+   */
   public void addTrainingInstance(Instance instance) {
     instance.setDataset(dataset);
     dataset.add(instance);
     untrainedInstances++;
-    /*
-    if (updateablePredictor) {
-      try {
-        ((UpdateableClassifier) predictor).updateClassifier(instance);
-        trainedInstances++;
-        untrainedInstances--;
-      }
-      catch (Exception e) {
-        System.out.println(e.getMessage());
-      }
-    }
-    */
   }
 
+  /**
+   * Adds CSV-String as monotoring data instance to training set. Values MUST be comma-seperated and numeric.
+   * @param csv
+   */
   public void addTrainingInstance(String csv) {
     Instance instance = csvStringToInstance(csv, true);
     if (instance != null) {
@@ -107,6 +104,12 @@ public class RuntimePrediction {
     }
   }
 
+  /**
+   * Transforms CSV-String to training instance, using the instance structure to the training data set.
+   * @param csv
+   * @param setRuntime
+   * @return Instance
+   */
   private Instance csvStringToInstance(String csv, boolean setRuntime) {
     String[] values = csv.split(",");
     int numAttributesNeeded = setRuntime ? dataset.numAttributes() : dataset.numAttributes() - 1;
@@ -118,7 +121,7 @@ public class RuntimePrediction {
           instance.setValue(i, value);
         }
         catch (NumberFormatException e) {
-          System.out.println("Failed to convert this csv string to Weka instance. Value must be numberic.");
+          System.out.println("Failed to convert this csv string to Weka instance. Value must be numeric.");
           return null;
         }
       }
@@ -131,6 +134,10 @@ public class RuntimePrediction {
     }
   }
 
+  /**
+   * Fits new prediction model for internal predictor. Uses prediction technique recommended by meta-classifier.
+   *
+   */
   public void batchLearning() {
     predictor = getBestPredictor(dataset);
     try {
@@ -143,28 +150,85 @@ public class RuntimePrediction {
     untrainedInstances = 0;
   }
 
-  public double predictRuntimeForInstance(String csv) {
+  /**
+   * Predicts the performance behavoiur (e.g., runtime) on the learned application for the given CSV-instance.
+   * If the amount of available, yet not-learned training instances surpasses the THRESHOLD_LEARNING, a new predictor is
+   * fit to the training data prior to predicting the instance.
+   *
+   * @param csv
+   *
+   * @return Numeric performance prediction
+   */
+  public double predictInstance(String csv) {
     Instance instance = csvStringToInstance(csv, false);
     if (instance != null) {
-      return predictRuntimeForInstance(instance);
+      return predictInstance(instance);
     }
     return -1;
   }
 
-  public double predictRuntimeForInstance(Instance instance) {
+  /**
+   * Predicts the performance behavoiur (e.g., runtime) on the learned application for the given instance in training
+   * sef format. If the amount of available, yet not-learned training instances surpasses the THRESHOLD_LEARNING, a new
+   * predictor is fit to the training data prior to predicting the instance.
+   *
+   * @param instance
+   *
+   * @return Numeric performance prediction
+   */
+  public double predictInstance(Instance instance) {
     instance.setDataset(dataset);
-    if (untrainedInstances > trainedInstances * TRIGGER_BATCH_LEARNING_PERCENTAGE) {
+    if (triggerLearning()){
       batchLearning();
     }
-    double predictedRuntime = -1;
+    double prediction = -1;
     try {
-      System.out.println(instance.classIndex());
-      predictedRuntime = predictor.classifyInstance(instance);
+      prediction = predictor.classifyInstance(instance);
     }
     catch (Exception e) {
       e.printStackTrace();
     }
-    return predictedRuntime;
+    return prediction;
   }
 
+  /**
+   * Checks if the amount of available, yet not-learned training instances surpasses the THRESHOLD_LEARNING in order to
+   * trigger the training of a new predictor..
+   *
+   * @return
+   */
+  private boolean triggerLearning() {
+    return (untrainedInstances > trainedInstances * THRESHOLD_LEARNING);
+  }
+
+  /**
+   * Helper-method (not necessary for DML-deployment). Was used for DML case study in order to create a CSV-File as
+   * String that contains a list of predictons for the input CSV-File (via filepath). Each prediction belongs to the
+   * respective "input parameter values" line in the input file.
+   *
+   * @param filepath
+   *
+   * @return CSV-String that contains all predictions for instances in input file
+   */
+  public String predictAllInFile(String filepath) {
+    if (!filepath.endsWith(".csv")) {
+      System.out.println("Wrong file type :(");
+      return "";
+    }
+    StringBuffer result = new StringBuffer();
+    File file = new File(filepath);
+
+    try {
+      Scanner scanner = new Scanner(file);
+      while (scanner.hasNextLine()) {
+        String line = scanner.nextLine();
+        int prediction = (int) predictInstance(line);
+        result.append(prediction + "\n");
+      }
+    }
+    catch (Exception e) {
+      e.printStackTrace();
+    }
+    return result.toString();
+  }
 }

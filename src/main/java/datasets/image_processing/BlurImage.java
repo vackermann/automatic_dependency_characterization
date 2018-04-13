@@ -10,9 +10,6 @@ import java.util.LinkedList;
 import java.util.List;
 
 import javax.imageio.ImageIO;
-
-import com.sun.scenario.effect.GaussianBlur;
-
 import datasets.DatasetCreator;
 import datasets.InputParameter;
 import ij.ImagePlus;

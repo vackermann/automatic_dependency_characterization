@@ -11,8 +11,6 @@ import javax.imageio.ImageIO;
 
 import datasets.DatasetCreator;
 import datasets.InputParameter;
-import ij.ImagePlus;
-import ij.process.ImageProcessor;
 import weka.core.Instance;
 
 import static datasets.image_processing.HistogramEQ.computeHistogramEQ;
